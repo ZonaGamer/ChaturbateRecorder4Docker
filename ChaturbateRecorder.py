@@ -1,4 +1,5 @@
 import time, datetime, os, sys, requests, configparser, re, subprocess
+from bs import BeautifulSoup
 if os.name == 'nt':
     import ctypes
     kernel32 = ctypes.windll.kernel32
@@ -88,20 +89,29 @@ def postProcess():
 def getOnlineModels():
     online = []
     global wanted
-    for gender in genders:
-        try:
-            data = {'categories': gender, 'num': 127}
-            result = requests.post("https://roomlister.stream.highwebmedia.com/session/start/", data=data).json()
-            length = len(result['rooms'])
-            online.extend([m['username'].lower() for m in result['rooms']])
-            data['key'] = result['key']
-            while length == 127:
-                result = requests.post("https://roomlister.stream.highwebmedia.com/session/next/", data=data).json()
-                length = len(result['rooms'])
-                data['key'] = result['key']
-                online.extend([m['username'].lower() for m in result['rooms']])
-        except:
-            break
+      
+    try:
+        url = 'https://camspider.com/'
+        html_text = requests.get(url).text
+        soup = BeautifulSoup(html_text, 'html.parser')
+        result = soup.select("#__NEXT_DATA__").json()
+        online.extend([m['username'].lower() for m in result['rooms']])
+    except:
+        break
+#    for gender in genders:
+#        try:
+#            data = {'categories': gender, 'num': 127}
+#            result = requests.post("https://roomlister.stream.highwebmedia.com/session/start/", data=data).json()
+#            length = len(result['rooms'])
+#            online.extend([m['username'].lower() for m in result['rooms']])
+#            data['key'] = result['key']
+#            while length == 127:
+#                result = requests.post("https://roomlister.stream.highwebmedia.com/session/next/", data=data).json()
+#                length = len(result['rooms'])
+#                data['key'] = result['key']
+#                online.extend([m['username'].lower() for m in result['rooms']])
+#        except:
+#            break
     f = open(wishlist, 'r')
     wanted =  list(set(f.readlines()))
     wanted = [m.strip('\n').split('chaturbate.com/')[-1].lower().strip().replace('/', '') for m in wanted]
