@@ -1,5 +1,5 @@
 import time, datetime, os, sys, requests, configparser, re, subprocess
-from bs import BeautifulSoup
+from bs4 import BeautifulSoup
 if os.name == 'nt':
     import ctypes
     kernel32 = ctypes.windll.kernel32
