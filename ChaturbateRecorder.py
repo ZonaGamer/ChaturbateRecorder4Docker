@@ -1,4 +1,4 @@
-import time, datetime, os, sys, requests, configparser, re, subprocess
+import time, datetime, os, sys, requests, configparser, re, subprocess, json
 from bs4 import BeautifulSoup
 if os.name == 'nt':
     import ctypes
@@ -94,10 +94,33 @@ def getOnlineModels():
         url = 'https://camspider.com/'
         html_text = requests.get(url).text
         soup = BeautifulSoup(html_text, 'html.parser')
-        result = soup.select("#__NEXT_DATA__").json()
+        result = soup.find('script', id='__NEXT_DATA__').string
+#        result = soup.select("#__NEXT_DATA__")[0]
+#        result = result.text
+#        print(result)
+        result = json.loads(result)
+        result = result['props']['pageProps']
         online.extend([m['username'].lower() for m in result['rooms']])
-    except:
-        break
+
+#	Add an additional check on chaturbate.com's main page, as camspider 
+#	does not find all online models (example: x__rose__x)
+
+        url = 'https://chaturbate.com/'
+        html_text = requests.get(url).text
+        soup = BeautifulSoup(html_text, 'html.parser')
+        room_list = soup.find('ul', id='room_list')
+        rooms = room_list.find_all('li', {'class': 'room_list_room'})
+        for r in rooms:
+            href = r.find('a')
+            if (href):
+                model = href.get('data-room')
+                if model not in online:
+                    online.append(model)
+#        print(online)
+                
+    except Exception as e:
+        print(e)
+        pass
 #    for gender in genders:
 #        try:
 #            data = {'categories': gender, 'num': 127}
@@ -113,14 +136,19 @@ def getOnlineModels():
 #        except:
 #            break
     f = open(wishlist, 'r')
-    wanted =  list(set(f.readlines()))
+    wanted = list(set(f.readlines()))
     wanted = [m.strip('\n').split('chaturbate.com/')[-1].lower().strip().replace('/', '') for m in wanted]
     #wantedModels = list(set(wanted).intersection(online).difference(recording))
     '''new method for building list - testing issue #19 yet again'''
+#    print(wanted)
+#    print("\nONLINE\n")
+#    print(online)
+#    print("\nRECORDING:\n")
+#    print(recording)
     wantedModels = [m for m in (list(set(wanted))) if m in online and m not in recording]
     for theModel in wantedModels:
-            thread = Thread(target=startRecording, args=(theModel,))
-            thread.start()
+        thread = Thread(target=startRecording, args=(theModel,))
+        thread.start()
     f.close()
 
 def onlineModelsIsChanged(previousOnlineModels, newOnlineModels):
@@ -155,12 +183,12 @@ if __name__ == '__main__':
     while True:
         #sys.stdout.write("\033[K")
         getOnlineModels()
-#        print(now(), " The following models are being recorded: {}".format(recording), end="\r")
+        print(now(), " The following models are being recorded: {}".format(recording), end="\r")
         if onlineModelsIsChanged(recordingModels, recording):
             logfile = open(logfilename, "a+")
             logfile.write(now() + " The following models are being recorded: {}\n".format(recording))
             logfile.close()
-#            print( now(),"{} model(s) are being recorded. Getting list of online models now".format(len(recording)))        
+            print( now(),"{} model(s) are being recorded. Getting list of online models now".format(len(recording)))        
             recordingModels = recording
 #        sys.stdout.write("\033[K")
 #        getOnlineModels()
