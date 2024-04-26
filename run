@@ -4,8 +4,8 @@ cd /ChaturbateRecorder
 cp /mnt/ChaturbateRecorder/config.conf .
 
 
-ls -a
-ls ..
-pwd
+echo ls -a
+echo ls ..
+echo pwd
 
 python3 ChaturbateRecorder.py
